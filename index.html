@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HiroMPLayer</title>
+  <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Cdefs%3E%3ClinearGradient id="g" x1="10" y1="8" x2="54" y2="58"%3E%3Cstop stop-color="%23b79be8"/%3E%3Cstop offset=".55" stop-color="%23ef83b8"/%3E%3Cstop offset="1" stop-color="%23ffd58d"/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="64" height="64" rx="18" fill="%23fff1f8"/%3E%3Cpath fill="url(%23g)" d="M39 12v29.8a8.9 8.9 0 1 1-5-8V19.6l17-4.2v-5.2z"/%3E%3Cpath fill="%23ffd58d" d="M17 9l2.2 6.1 6.1 2.2-6.1 2.2L17 25.6l-2.2-6.1-6.1-2.2 6.1-2.2z"/%3E%3Ccircle cx="50" cy="48" r="5" fill="%23bfe7ea"/%3E%3C/svg%3E' />
+  <style>
+    :root {
+      --ink: #303c78;
+      --ink-soft: #596196;
+      --muted: #8686aa;
+      --pink: #ef83b8;
+      --pink-deep: #e75d9d;
+      --pink-soft: #ffd8e7;
+      --lavender: #b79be8;
+      --lavender-soft: #efe3ff;
+      --blue: #8bb8f5;
+      --aqua: #9cdfe6;
+      --cream: #fff9f6;
+      --panel: rgba(255, 255, 255, 0.73);
+      --panel-strong: rgba(255, 255, 255, 0.9);
+      --line: rgba(219, 194, 222, 0.55);
+      --shadow: 0 24px 70px rgba(115, 85, 139, 0.19);
+      --shadow-soft: 0 12px 32px rgba(218, 117, 165, 0.18);
+      --radius-xl: 34px;
+      --radius-lg: 26px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 1220px;
+      margin: 0;
+      font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 7% 12%, rgba(255, 255, 255, 0.88) 0 2px, transparent 3px),
+        radial-gradient(circle at 89% 6%, rgba(255, 255, 255, 0.88) 0 2px, transparent 3px),
+        radial-gradient(circle at 15% 86%, rgba(180, 227, 222, 0.9) 0 6px, transparent 7px),
+        radial-gradient(circle at 72% 18%, rgba(255, 199, 223, 0.75), transparent 20%),
+        radial-gradient(circle at 12% 28%, rgba(207, 191, 246, 0.85), transparent 24%),
+        radial-gradient(circle at 55% 94%, rgba(255, 223, 181, 0.65), transparent 22%),
+        linear-gradient(135deg, #f5e7ff 0%, #fff1f8 42%, #f8ecff 66%, #fff9ec 100%);
+      overflow-x: auto;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      position: relative;
+      display: grid;
+      grid-template-columns: 260px minmax(620px, 1fr) 360px;
+      gap: 24px;
+      min-height: 100vh;
+      padding: 26px;
+      isolation: isolate;
+    }
+
+    .app::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 92px 92px;
+      mask-image: linear-gradient(180deg, transparent, #000 14%, #000 85%, transparent);
+    }
+
+    .sparkle-layer {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .sparkle {
+      position: absolute;
+      color: var(--pink);
+      font-weight: 700;
+      text-shadow: 0 4px 16px rgba(255, 255, 255, 0.9);
+    }
+
+    .sparkle svg {
+      width: 1em;
+      height: 1em;
+      display: block;
+      fill: currentColor;
+      filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.9));
+    }
+
+    .sparkle:nth-child(1) { left: 4%; top: 6%; font-size: 19px; color: #ffd781; }
+    .sparkle:nth-child(2) { left: 13%; top: 9%; font-size: 22px; color: #ffa6c8; }
+    .sparkle:nth-child(3) { left: 42%; top: 7%; font-size: 26px; color: #d7a4ef; }
+    .sparkle:nth-child(4) { right: 8%; top: 14%; font-size: 18px; color: #f9a3c7; }
+    .sparkle:nth-child(5) { left: 23%; bottom: 12%; font-size: 20px; color: #b7a8f0; }
+    .sparkle:nth-child(6) { right: 31%; bottom: 7%; font-size: 22px; color: #fab7d0; }
+    .sparkle:nth-child(7) { right: 16%; bottom: 21%; font-size: 28px; color: #c4a8ef; }
+    .sparkle:nth-child(8) { left: 56%; top: 19%; font-size: 18px; color: #fff0ad; }
+
+    .glass {
+      border: 1px solid rgba(255, 255, 255, 0.76);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 246, 251, 0.64));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+    }
+
+    .sidebar,
+    .right-panel,
+    .player-card,
+    .library-card {
+      border-radius: var(--radius-xl);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 52px);
+      padding: 28px 20px;
+    }
+
+    .brand {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      margin: 6px 0 34px;
+      text-align: center;
+    }
+
+    .brand-mark {
+      position: relative;
+      height: 56px;
+      width: 96px;
+      color: var(--lavender);
+    }
+
+    .brand-mark .note {
+      position: absolute;
+      left: 36px;
+      top: 1px;
+      width: 48px;
+      height: 48px;
+      filter: drop-shadow(0 8px 12px rgba(181, 141, 222, 0.2));
+    }
+
+    .brand-logo {
+      width: 96px;
+      height: 56px;
+      overflow: visible;
+    }
+
+    .brand-mark .mini {
+      position: absolute;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.75;
+    }
+
+    .brand-mark .mini:nth-child(2) { left: 6px; top: 8px; width: 9px; height: 9px; color: #ffd58d; }
+    .brand-mark .mini:nth-child(3) { right: 8px; top: 18px; width: 14px; height: 14px; color: #ffabc8; clip-path: polygon(50% 0, 62% 34%, 98% 35%, 68% 56%, 79% 91%, 50% 70%, 21% 91%, 32% 56%, 2% 35%, 38% 34%); }
+    .brand-mark .mini:nth-child(4) { right: 28px; top: 0; width: 17px; height: 17px; color: #ffe08c; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+
+    h1 {
+      margin: 0;
+      font-size: 31px;
+      line-height: 1;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+
+    h1 span,
+    .accent {
+      color: var(--pink);
+    }
+
+    .tagline {
+      margin: 0;
+      color: #7475a3;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+      margin-bottom: auto;
+    }
+
+    .nav button {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      align-items: center;
+      min-height: 56px;
+      border-radius: 17px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      background: linear-gradient(90deg, rgba(248, 144, 187, 0.34), rgba(255, 222, 229, 0.55));
+      box-shadow: 0 10px 22px rgba(232, 107, 157, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .nav .icon-pill {
+      display: grid;
+      place-items: center;
+      width: 31px;
+      height: 31px;
+      margin-left: 12px;
+      border-radius: 10px;
+      color: #5b6097;
+    }
+
+    .nav button.active .icon-pill {
+      color: white;
+      background: linear-gradient(135deg, #ff93c3, #ed7eb6);
+      box-shadow: 0 7px 16px rgba(232, 96, 154, 0.35);
+    }
+
+    .sidebar-card {
+      margin-top: 26px;
+      border-radius: 18px;
+      border: 1px solid rgba(235, 194, 210, 0.72);
+      background: linear-gradient(140deg, rgba(255, 227, 235, 0.72), rgba(255, 244, 234, 0.57));
+      box-shadow: 0 12px 30px rgba(164, 118, 154, 0.12);
+    }
+
+    .vibes {
+      min-height: 154px;
+      padding: 20px 16px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .vibes strong {
+      display: block;
+      color: var(--ink);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .vibes p {
+      margin: 0;
+      max-width: 130px;
+      color: #777ba8;
+      font-size: 13px;
+      line-height: 1.65;
+      font-weight: 500;
+    }
+
+    .cloud {
+      position: absolute;
+      right: 18px;
+      bottom: 15px;
+      width: 78px;
+      height: 38px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #e4d5ff, #ffd5e8);
+      box-shadow: inset 0 -6px 10px rgba(142, 118, 206, 0.12);
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      background: inherit;
+    }
+
+    .cloud::before {
+      left: 16px;
+      top: -17px;
+      width: 39px;
+      height: 39px;
+    }
+
+    .cloud::after {
+      right: 9px;
+      top: -9px;
+      width: 28px;
+      height: 28px;
+      background: #ffdfc5;
+    }
+
+    .device {
+      display: grid;
+      grid-template-columns: 32px 1fr 24px;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .device small,
+    .trash-note small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .device strong {
+      font-size: 13px;
+    }
+
+    .theme-toggle {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      padding: 14px;
+      background: rgba(255, 236, 244, 0.78);
+    }
+
+    .switch {
+      position: relative;
+      width: 56px;
+      height: 25px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ee85b9, #ffd6e8);
+      box-shadow: inset 0 2px 6px rgba(129, 68, 122, 0.13);
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 3px 8px rgba(101, 84, 140, 0.2);
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: minmax(340px, 0.95fr) minmax(350px, 1fr);
+      gap: 16px;
+      min-width: 620px;
+    }
+
+    .player-card {
+      padding: 28px 34px 24px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 16px;
+      font-size: 18px;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+
+    .section-title .decor {
+      color: var(--pink);
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .now-playing {
+      position: relative;
+      display: grid;
+      grid-template-columns: 220px minmax(340px, 1fr) 40px;
+      gap: 28px;
+      min-height: 250px;
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(248, 198, 211, 0.72);
+      background:
+        radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.9), transparent 16%),
+        linear-gradient(135deg, rgba(255, 219, 228, 0.82), rgba(255, 245, 237, 0.8) 54%, rgba(255, 223, 234, 0.68));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .now-playing::after {
+      content: "";
+      position: absolute;
+      right: 30px;
+      top: 7px;
+      width: 58px;
+      height: 58px;
+      background: rgba(237, 130, 184, 0.45);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M42 8v31.5a9.5 9.5 0 1 1-5.5-8.6V15.2l19-4.7V5zM18.5 24.5c0 5.2 4.4 8.7 9.2 8.7 1.5 0 2.6-1.1 2.6-2.5s-1.1-2.5-2.6-2.5c-2.3 0-4.2-1.5-4.2-3.7 0-2.3 1.9-3.8 4.2-3.8h3.7v-5h-3.7c-5.1 0-9.2 3.6-9.2 8.8z'/%3E%3C/svg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M42 8v31.5a9.5 9.5 0 1 1-5.5-8.6V15.2l19-4.7V5zM18.5 24.5c0 5.2 4.4 8.7 9.2 8.7 1.5 0 2.6-1.1 2.6-2.5s-1.1-2.5-2.6-2.5c-2.3 0-4.2-1.5-4.2-3.7 0-2.3 1.9-3.8 4.2-3.8h3.7v-5h-3.7c-5.1 0-9.2 3.6-9.2 8.8z'/%3E%3C/svg%3E") center / contain no-repeat;
+      transform: rotate(-14deg);
+    }
+
+    .cover {
+      position: relative;
+      width: 210px;
+      height: 210px;
+      align-self: center;
+      overflow: hidden;
+      border-radius: 21px;
+      background: linear-gradient(135deg, #8bc8f6, #ffd4e9 55%, #c7a1f4);
+      box-shadow: 0 16px 24px rgba(134, 91, 139, 0.22);
+    }
+
+    .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cover-art {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 17%, #fff6b7 0 11px, transparent 12px),
+        radial-gradient(circle at 19% 17%, #8cc6f4 0 21px, transparent 22px),
+        radial-gradient(circle at 89% 21%, rgba(255, 255, 255, 0.72) 0 24px, transparent 25px),
+        radial-gradient(circle at 15% 62%, rgba(255, 255, 255, 0.62) 0 34px, transparent 35px),
+        radial-gradient(circle at 70% 63%, rgba(255, 255, 255, 0.38) 0 42px, transparent 43px),
+        linear-gradient(160deg, #9bcff8 0%, #f2c4f2 55%, #ffd3c5 100%);
+    }
+
+    .cover-art::before,
+    .cover-art::after {
+      content: "";
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.52);
+    }
+
+    .cover-art::before {
+      height: 72px;
+      bottom: 30px;
+      transform: rotate(-8deg);
+    }
+
+    .cover-art::after {
+      height: 95px;
+      bottom: -37px;
+      background: rgba(255, 217, 240, 0.72);
+      transform: rotate(-5deg);
+    }
+
+    .track-info {
+      align-self: center;
+      min-width: 0;
+      padding-right: 12px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .track-title {
+      margin: 0;
+      max-width: 100%;
+      overflow: hidden;
+      color: var(--ink);
+      font-size: clamp(24px, 2.1vw, 32px);
+      line-height: 1.12;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .heart {
+      color: var(--pink);
+      width: 23px;
+      height: 23px;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 6px 12px rgba(238, 117, 177, 0.28));
+    }
+
+    .artist {
+      margin: 6px 0 9px;
+      color: var(--pink);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 12px;
+      border: 1px solid rgba(178, 143, 223, 0.4);
+      border-radius: 999px;
+      background: rgba(234, 218, 255, 0.65);
+      color: #8267bb;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 47px;
+      margin-right: 22px;
+    }
+
+    .bar {
+      width: 4px;
+      min-width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ec78b2, #b5a6f6, #8bd1ff);
+      opacity: 0.55;
+      transform-origin: center;
+    }
+
+    .is-playing .bar {
+      animation: pulse 900ms ease-in-out infinite alternate;
+      animation-delay: calc(var(--i) * -38ms);
+    }
+
+    @keyframes pulse {
+      from { transform: scaleY(0.66); opacity: 0.43; }
+      to { transform: scaleY(1.25); opacity: 0.95; }
+    }
+
+    .progress-wrap {
+      display: grid;
+      grid-template-columns: 44px 1fr 44px;
+      align-items: center;
+      gap: 11px;
+      margin: 4px 0 28px;
+      color: #65699a;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .progress {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(206, 177, 188, 0.31);
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 35%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ee7fb7, #f4a7c5);
+    }
+
+    .progress-thumb {
+      position: absolute;
+      top: 50%;
+      left: 35%;
+      width: 13px;
+      height: 13px;
+      border: 3px solid white;
+      border-radius: 50%;
+      background: #f2a2c3;
+      box-shadow: 0 4px 10px rgba(153, 91, 123, 0.24);
+      transform: translate(-50%, -50%);
+    }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(178px, 0.78fr);
+      gap: 14px;
+      align-items: center;
+    }
+
+    .control-group {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      align-items: center;
+      justify-items: center;
+      min-height: 78px;
+      border: 1px solid rgba(235, 199, 212, 0.72);
+      border-radius: 25px;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: 0 14px 28px rgba(152, 92, 137, 0.11);
+    }
+
+    .control {
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      min-width: 46px;
+      background: transparent;
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .control svg {
+      width: 23px;
+      height: 23px;
+      stroke-width: 2.25;
+    }
+
+    .control.active {
+      color: var(--pink-deep);
+    }
+
+    .play {
+      width: 68px;
+      height: 68px;
+      margin: -16px 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff9fca, #ee6da9);
+      color: white;
+      box-shadow: 0 14px 26px rgba(237, 104, 165, 0.38), inset 0 0 0 8px rgba(255, 255, 255, 0.2);
+    }
+
+    .play svg {
+      width: 30px;
+      height: 30px;
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .more-button {
+      display: grid;
+      place-items: center;
+      width: 37px;
+      height: 47px;
+      border-radius: 17px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      box-shadow: 0 8px 18px rgba(136, 80, 123, 0.14);
+      z-index: 1;
+    }
+
+    .library-card {
+      min-height: 0;
+      padding: 24px 28px 18px;
+    }
+
+    .library-head {
+      display: grid;
+      grid-template-columns: 1fr 220px 96px;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .search {
+      position: relative;
+    }
+
+    .search svg {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      color: #9a91bd;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search input,
+    .form-field input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid rgba(210, 196, 214, 0.86);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--ink);
+      outline: none;
+      box-shadow: inset 0 1px 2px rgba(81, 73, 124, 0.04);
+    }
+
+    .search input {
+      padding: 0 14px 0 40px;
+      font-size: 12px;
+    }
+
+    .view-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 40px;
+      border: 1px solid rgba(215, 202, 219, 0.75);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .view-toggle button {
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .view-toggle button.active {
+      color: white;
+      background: linear-gradient(135deg, #ed83b7, #de70a9);
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid rgba(222, 203, 213, 0.75);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      height: 50px;
+      border-bottom: 1px solid rgba(217, 203, 209, 0.72);
+      color: var(--ink);
+      font-size: 13px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      height: 38px;
+      color: #9188ae;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr {
+      transition: background 150ms ease;
+    }
+
+    tbody tr:hover,
+    tbody tr.active {
+      background: rgba(255, 232, 241, 0.58);
+    }
+
+    .col-num { width: 64px; text-align: center; }
+    .col-title { width: auto; }
+    .col-artist { width: 26%; }
+    .col-duration { width: 100px; }
+    .col-menu { width: 60px; text-align: center; }
+
+    .song-title-cell {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      min-width: 0;
+      background: transparent;
+      font-weight: 800;
+      color: #6e58b9;
+      text-align: left;
+    }
+
+    tr.active .song-title-cell {
+      color: var(--pink-deep);
+    }
+
+    .thumb {
+      position: relative;
+      flex: 0 0 auto;
+      width: 41px;
+      height: 41px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ffb6cf, #a6cef7);
+      box-shadow: 0 6px 11px rgba(115, 78, 133, 0.13);
+    }
+
+    .thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ellipsis {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 28px;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .ellipsis svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .inline-icon {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      vertical-align: -2px;
+    }
+
+    .footer-icons {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      color: #8a7aba;
+    }
+
+    .footer-icons svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .library-foot {
+      display: grid;
+      grid-template-columns: 190px 1fr 170px;
+      align-items: center;
+      min-height: 52px;
+      margin-top: 18px;
+      padding: 0 20px;
+      border: 1px solid rgba(246, 210, 218, 0.85);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(255, 230, 236, 0.75), rgba(255, 246, 236, 0.66));
+      color: #756fa0;
+      font-weight: 700;
+    }
+
+    .mini-wave {
+      height: 27px;
+      opacity: 0.45;
+      background:
+        radial-gradient(ellipse at 10% 50%, transparent 0 25%, #f19bc4 26% 30%, transparent 31%),
+        radial-gradient(ellipse at 20% 50%, transparent 0 18%, #f19bc4 19% 24%, transparent 25%),
+        radial-gradient(ellipse at 30% 50%, transparent 0 35%, #f19bc4 36% 41%, transparent 42%),
+        radial-gradient(ellipse at 44% 50%, transparent 0 22%, #f19bc4 23% 28%, transparent 29%),
+        radial-gradient(ellipse at 58% 50%, transparent 0 40%, #f19bc4 41% 46%, transparent 47%),
+        radial-gradient(ellipse at 76% 50%, transparent 0 26%, #f19bc4 27% 32%, transparent 33%);
+      background-size: 100% 100%;
+    }
+
+    .right {
+      display: grid;
+      grid-template-rows: minmax(520px, auto) minmax(230px, 1fr);
+      gap: 14px;
+      min-width: 340px;
+    }
+
+    .right-panel {
+      padding: 25px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .round-icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      color: white;
+      background: linear-gradient(135deg, #ff9dca, #ef76af);
+      box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.55);
+    }
+
+    .close-x {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .panel-copy {
+      margin: 0 0 18px;
+      color: #8580a6;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .upload-zone {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 162px;
+      border: 2px dashed rgba(190, 154, 226, 0.66);
+      border-radius: 17px;
+      background: rgba(255, 255, 255, 0.42);
+      color: #716c9e;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragging {
+      border-color: var(--pink);
+      background: rgba(255, 235, 244, 0.72);
+      transform: translateY(-1px);
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    .upload-zone svg {
+      width: 50px;
+      height: 50px;
+      color: var(--lavender);
+      margin-bottom: 10px;
+    }
+
+    .upload-zone p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      font-weight: 600;
+    }
+
+    .upload-zone p span {
+      color: var(--pink-deep);
+    }
+
+    .file-name {
+      margin-top: 8px;
+      color: #6e61a5;
+      font-size: 12px;
+      font-weight: 800;
+      word-break: break-word;
+    }
+
+    .form {
+      display: grid;
+      gap: 15px;
+      margin-top: 14px;
+    }
+
+    .form-field label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .form-field label span {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .form-field input {
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .image-picker {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .image-preview {
+      display: grid;
+      place-items: center;
+      width: 86px;
+      height: 76px;
+      overflow: hidden;
+      border: 1px solid rgba(199, 170, 229, 0.61);
+      border-radius: 10px;
+      background: rgba(234, 215, 255, 0.55);
+      color: #b59be2;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .choose-image {
+      display: inline-grid;
+      place-items: center;
+      width: 126px;
+      height: 39px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #c5a8ee, #ad86dd);
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 14px rgba(126, 90, 167, 0.2);
+    }
+
+    .image-help {
+      margin: 8px 0 0;
+      color: #8580a6;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .primary-btn {
+      display: grid;
+      grid-template-columns: 20px auto;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+      border-radius: 9px;
+      background: linear-gradient(90deg, #e96aa7, #ef8fbd);
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 10px 18px rgba(232, 100, 160, 0.22);
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .trash-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 250px;
+      padding: 22px 21px;
+    }
+
+    .trash-list {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      margin-top: 4px;
+      max-height: 112px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .trash-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 49px 1fr 33px;
+      gap: 11px;
+      align-items: center;
+      min-height: 55px;
+      padding: 8px;
+      border: 1px solid rgba(226, 206, 218, 0.75);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .trash-thumb {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ffb0c8, #8cc7f3);
+    }
+
+    .thumb .cover-art,
+    .trash-thumb .cover-art {
+      border-radius: inherit;
+    }
+
+    .trash-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .trash-item strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .trash-item small {
+      color: #7f7aa4;
+      font-weight: 700;
+    }
+
+    .trash-actions {
+      position: absolute;
+      right: 2px;
+      top: 44px;
+      z-index: 5;
+      display: none;
+      min-width: 180px;
+      padding: 8px;
+      border: 1px solid rgba(222, 213, 229, 0.82);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 14px 30px rgba(69, 58, 98, 0.18);
+    }
+
+    .trash-item.menu-open .trash-actions {
+      display: grid;
+      gap: 4px;
+    }
+
+    .trash-actions button {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      padding: 0 9px;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .trash-actions button:hover {
+      background: rgba(245, 232, 241, 0.82);
+    }
+
+    .trash-actions .danger {
+      color: #ff4d70;
+    }
+
+    .trash-foot {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+      color: #7775a1;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .bin {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      color: var(--lavender);
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 70px;
+      color: #8b86ad;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      z-index: 20;
+      display: none;
+      min-width: 260px;
+      padding: 12px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.84);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--ink);
+      box-shadow: 0 16px 40px rgba(95, 70, 122, 0.18);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 800;
+      transform: translateX(-50%);
+      backdrop-filter: blur(18px);
+    }
+
+    .toast.show {
+      display: block;
+      animation: toastIn 220ms ease;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translate(-50%, 12px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1350px) {
+      .app {
+        grid-template-columns: 240px minmax(590px, 1fr) 330px;
+        gap: 18px;
+        padding: 18px;
+      }
+
+      .sidebar {
+        min-height: calc(100vh - 36px);
+      }
+
+      .player-card {
+        padding: 24px;
+      }
+
+      .now-playing {
+        grid-template-columns: 190px minmax(320px, 1fr) 34px;
+        gap: 20px;
+      }
+
+      .cover {
+        width: 184px;
+        height: 184px;
+      }
+
+      .controls-row {
+        grid-template-columns: minmax(300px, 1fr) minmax(220px, 0.75fr);
+      }
+
+      .right-panel {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sparkle-layer" aria-hidden="true">
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="m12 2 3 6 6 .9-4.5 4.4 1.1 6.2L12 16.6l-5.6 2.9 1.1-6.2L3 8.9 9 8z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 4l1.5 6.5L20 12l-6.5 1.5L12 20l-1.5-6.5L4 12l6.5-1.5z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 4l1.5 6.5L20 12l-6.5 1.5L12 20l-1.5-6.5L4 12l6.5-1.5z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M16 3v12.5a3.8 3.8 0 1 1-2-3.4V6.8l6-1.5V3z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M9 18.2A3.2 3.2 0 1 1 7 15.3V5.8l10-2.3v10.8a3.2 3.2 0 1 1-2-2.9V7.3l-6 1.4z"/></svg></span>
+    <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg></span>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar glass" aria-label="Navigasi HiroMPLayer">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 96 56">
+            <path fill="#b79be8" d="M51 4v33a9.5 9.5 0 1 1-6-8.8V12.6l21-5.1V3z"/>
+            <circle cx="10" cy="12" r="4.5" fill="#ffd58d"/>
+            <path fill="#ffe08c" d="M76 1l2.4 6.5 6.6 2.4-6.6 2.4L76 19l-2.4-6.7L67 9.9l6.6-2.4z"/>
+            <path fill="#ffabc8" d="m84 22 2.1 4.3 4.7.7-3.4 3.3.8 4.6-4.2-2.2-4.2 2.2.8-4.6-3.4-3.3 4.7-.7z"/>
+            <path fill="#f4a8c8" d="M28 8h3v7h7v3h-7v7h-3v-7h-7v-3h7z"/>
+          </svg>
+        </div>
+        <h1>HiroMP<span>Layer</span></h1>
+        <p class="tagline">Personal Music Player</p>
+      </div>
+
+      <nav class="nav">
+        <button class="active" type="button" data-scroll-target="home">
+          <span class="icon-pill">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M4 11.4 12 4l8 7.4v7.7a1.4 1.4 0 0 1-1.4 1.4h-4.1v-5.3h-5v5.3H5.4A1.4 1.4 0 0 1 4 19.1z"/></svg>
+          </span>
+          <span>Home</span>
+        </button>
+        <button type="button" data-scroll-target="library">
+          <span class="icon-pill">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9 18.5A3.5 3.5 0 1 1 5.5 15H7V5.8c0-.7.4-1.2 1.1-1.4l9-2.3c.9-.2 1.9.5 1.9 1.4v11a3.5 3.5 0 1 1-2-3.2V7.1l-8 2z"/></svg>
+          </span>
+          <span>Library</span>
+        </button>
+        <button type="button" data-scroll-target="add">
+          <span class="icon-pill">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2" d="M12 5v14M5 12h14"/></svg>
+          </span>
+          <span>Add Music</span>
+        </button>
+        <button type="button" data-scroll-target="trash">
+          <span class="icon-pill">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M9 7V5.5c0-.8.7-1.5 1.5-1.5h3c.8 0 1.5.7 1.5 1.5V7m-8 0 .8 13h8.4L17 7M10 11v5M14 11v5"/></svg>
+          </span>
+          <span>Trash</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-card vibes">
+        <strong><svg class="inline-icon accent" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20.5 10.7 19C5.8 14.7 3 12.1 3 8.8 3 6.2 5.1 4 7.7 4c1.5 0 3 .7 3.9 1.8A5 5 0 0 1 15.5 4C18 4 20.2 6.2 20.2 8.8c0 3.3-2.9 5.9-7.7 10.2z"/></svg> Good vibes only</strong>
+        <p>Let the music heal your day</p>
+        <span class="cloud" aria-hidden="true"></span>
+      </div>
+
+      <div class="sidebar-card device">
+        <svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 6h16v10H4zM2.5 19h19"/></svg>
+        <div>
+          <small>Connected Device</small>
+          <strong>Hiro's Laptop</strong>
+        </div>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 6 6 6-6 6"/></svg>
+      </div>
+
+      <div class="sidebar-card theme-toggle" aria-label="Dekorasi mode terang">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M20 15.2A7.7 7.7 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg>
+        <span class="switch"></span>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0 5-1.4-3h2.8zm0-22 1.4 3h-2.8zM1 12l3-1.4v2.8zm22 0-3 1.4v-2.8zM4.2 21.2l1.1-3.1 1.6 1.6zm15.6 0-2.7-1.5 1.6-1.6zM4.2 2.8l2.7 1.5-1.6 1.6zm15.6 0-1.1 3.1-1.6-1.6z"/></svg>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="player-card glass" id="home" aria-label="Now Playing">
+        <h2 class="section-title"><svg class="decor" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg> Now Playing</h2>
+        <div class="now-playing" id="playerShell">
+          <div class="cover" id="currentCover" aria-label="Album cover"></div>
+          <div class="track-info">
+            <div class="title-row">
+              <h3 class="track-title" id="currentTitle">Daydream Parade</h3>
+              <svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20.5 10.7 19C5.8 14.7 3 12.1 3 8.8 3 6.2 5.1 4 7.7 4c1.5 0 3 .7 3.9 1.8A5 5 0 0 1 15.5 4C18 4 20.2 6.2 20.2 8.8c0 3.3-2.9 5.9-7.7 10.2z"/></svg>
+            </div>
+            <p class="artist" id="currentArtist">Hiro MP</p>
+            <div class="chips">
+              <span class="chip">Dreamy Pop</span>
+              <span class="chip" id="currentYear">2026</span>
+            </div>
+            <div class="waveform" id="waveform" aria-hidden="true"></div>
+            <div class="progress-wrap">
+              <span id="currentTime">0:00</span>
+              <div class="progress" id="progressBar" role="slider" aria-label="Song progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+                <span class="progress-fill" id="progressFill"></span>
+                <span class="progress-thumb" id="progressThumb"></span>
+              </div>
+              <span id="durationTime">0:00</span>
+            </div>
+            <div class="controls-row">
+              <div class="control-group">
+                <button class="control" type="button" id="previousBtn" title="Previous">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 5h2v14H6zm3 7 10-7v14z"/></svg>
+                  <span>Previous</span>
+                </button>
+                <button class="control" type="button" id="restartBtn" title="Restart">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M4 7v6h6M5.3 17A8 8 0 1 0 5 8"/></svg>
+                  <span>Restart</span>
+                </button>
+                <button class="control play" type="button" id="playBtn" title="Play/Pause" aria-label="Play">
+                  <svg id="playIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  <span class="sr-only">Play/Pause</span>
+                </button>
+                <button class="control" type="button" id="nextBtn" title="Next">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m5 5 10 7-10 7zm11 0h2v14h-2z"/></svg>
+                  <span>Next</span>
+                </button>
+              </div>
+              <div class="control-group">
+                <button class="control" type="button" id="repeatBtn" title="Repeat playlist">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M17 2.8 21 7l-4 4.2M3 11V9a2 2 0 0 1 2-2h16M7 21.2 3 17l4-4.2M21 13v2a2 2 0 0 1-2 2H3"/></svg>
+                  <span>Repeat</span>
+                </button>
+                <button class="control" type="button" id="loopBtn" title="Loop current song">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M17 2.8 21 7l-4 4.2M3 11V9a2 2 0 0 1 2-2h16M7 21.2 3 17l4-4.2M21 13v2a2 2 0 0 1-2 2H3"/></svg>
+                  <span>Loop</span>
+                </button>
+                <button class="control" type="button" id="shuffleBtn" title="Shuffle">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                  <span>Shuffle</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <button class="more-button" type="button" id="currentMenu" title="Current song menu" aria-label="Current song menu">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="library-card glass" id="library" aria-label="Your Library">
+        <div class="library-head">
+          <h2 class="section-title"><svg class="decor" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 18.5A3.5 3.5 0 1 1 5.5 15H7V5.8c0-.7.4-1.2 1.1-1.4l9-2.3c.9-.2 1.9.5 1.9 1.4v11a3.5 3.5 0 1 1-2-3.2V7.1l-8 2z"/></svg> Your Library</h2>
+          <label class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+            <span class="sr-only">Search songs</span>
+            <input id="searchInput" type="search" placeholder="Search songs..." autocomplete="off" />
+          </label>
+          <div class="view-toggle" aria-label="Library view">
+            <button class="active" type="button" title="List view">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M5 6h14v3H5zm0 5h14v3H5zm0 5h14v3H5z"/></svg>
+            </button>
+            <button type="button" title="Grid view">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-title">Title</th>
+                <th class="col-artist">Artist</th>
+                <th class="col-duration">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                </th>
+                <th class="col-menu"></th>
+              </tr>
+            </thead>
+            <tbody id="libraryBody"></tbody>
+          </table>
+        </div>
+
+        <div class="library-foot">
+          <span id="libraryStats">0 songs • 0:00 total</span>
+          <span class="mini-wave" aria-hidden="true"></span>
+          <span class="footer-icons" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z"/></svg>
+            <svg viewBox="0 0 24 24"><path fill="#f061a4" d="M12 20.5 10.7 19C5.8 14.7 3 12.1 3 8.8 3 6.2 5.1 4 7.7 4c1.5 0 3 .7 3.9 1.8A5 5 0 0 1 15.5 4C18 4 20.2 6.2 20.2 8.8c0 3.3-2.9 5.9-7.7 10.2z"/></svg>
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 18.5A3.5 3.5 0 1 1 5.5 15H7V5.8c0-.7.4-1.2 1.1-1.4l9-2.3c.9-.2 1.9.5 1.9 1.4v11a3.5 3.5 0 1 1-2-3.2V7.1l-8 2z"/></svg>
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 4l1.5 6.5L20 12l-6.5 1.5L12 20l-1.5-6.5L4 12l6.5-1.5z"/></svg>
+          </span>
+        </div>
+      </section>
+    </main>
+
+    <aside class="right">
+      <section class="right-panel glass" id="add" aria-label="Add Music">
+        <div class="panel-head">
+          <h2 class="panel-title"><span class="round-icon"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.6" d="M12 5v14M5 12h14"/></svg></span> Add Music</h2>
+          <button class="close-x" type="button" title="Clear form" id="clearFormBtn">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <p class="panel-copy">Import your music to add to your library.</p>
+
+        <label class="upload-zone" id="dropZone">
+          <input id="audioInput" type="file" accept="audio/*" />
+          <div>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M12 16V6m0 0L8 10m4-4 4 4M6 18a4 4 0 0 1 .7-8 5.5 5.5 0 0 1 10.6 1.7A3.2 3.2 0 0 1 17 18Z"/></svg>
+            <p>Drag & drop your files here<br />MP3, WAV, FLAC, M4A<br />or <span>click to browse</span></p>
+            <div class="file-name" id="audioName">No music selected</div>
+          </div>
+        </label>
+
+        <form class="form" id="addForm">
+          <div class="form-field">
+            <label for="titleInput">Title</label>
+            <input id="titleInput" type="text" placeholder="e.g. Dreamy Song" autocomplete="off" required />
+          </div>
+
+          <div class="form-field">
+            <label>Image <span>(optional)</span></label>
+            <div class="image-picker">
+              <div class="image-preview" id="imagePreview">
+                <svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 18 9 12l4 5 2-3 5 4M7 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-3 12h16V3H4z"/></svg>
+              </div>
+              <div>
+                <label class="choose-image" for="coverInput">Choose Image</label>
+                <input class="sr-only" id="coverInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                <p class="image-help">JPG, PNG or WebP</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="artistInput">Artist <span>(optional)</span></label>
+            <input id="artistInput" type="text" placeholder="e.g. Hiro MP" autocomplete="off" />
+          </div>
+
+          <button class="primary-btn" type="submit" id="addBtn">
+            <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.3" d="M12 5v14M5 12h14"/></svg>
+            Add to Library
+          </button>
+        </form>
+      </section>
+
+      <section class="right-panel glass trash-panel" id="trash" aria-label="Trash">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            <span class="round-icon">
+              <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M9 7V5.5c0-.8.7-1.5 1.5-1.5h3c.8 0 1.5.7 1.5 1.5V7m-8 0 .8 13h8.4L17 7"/></svg>
+            </span>
+            Trash
+          </h2>
+        </div>
+        <p class="panel-copy">Manage deleted songs.</p>
+        <div class="trash-list" id="trashList"></div>
+        <div class="trash-foot">
+          <span class="bin">
+            <svg viewBox="0 0 24 24" width="48" height="48" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M9 7V5.5c0-.8.7-1.5 1.5-1.5h3c.8 0 1.5.7 1.5 1.5V7m-8 0 .8 13h8.4L17 7M10 11v5M14 11v5"/></svg>
+          </span>
+          <p class="trash-note">Items in trash will be permanently deleted after 30 days.</p>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <audio id="audio"></audio>
+
+  <script>
+    const STORAGE_KEY = "hiroMPLayerSongs";
+    const TRASH_LIMIT = 30 * 24 * 60 * 60 * 1000;
+
+    const demoCovers = [
+      "linear-gradient(145deg, #8fcaf8 0%, #f7c5f3 54%, #ffd4c3 100%)",
+      "linear-gradient(145deg, #7fa7f4 0%, #d4b6ff 48%, #ffc9d8 100%)",
+      "linear-gradient(145deg, #8adce0 0%, #c8efe4 48%, #ffdfba 100%)",
+      "linear-gradient(145deg, #ffb2bd 0%, #ffd9b7 48%, #f3a5d0 100%)",
+      "linear-gradient(145deg, #c4a5ff 0%, #f5c3ff 48%, #9ed3ff 100%)"
+    ];
+
+    const seedSongs = [
+      { id: "seed-1", title: "Daydream Parade", artist: "Hiro MP", duration: 225, deletedAt: null, demoCover: 0 },
+      { id: "seed-2", title: "Starlight Whisper", artist: "Hiro MP", duration: 252, deletedAt: null, demoCover: 1 },
+      { id: "seed-3", title: "Minty Memories", artist: "Hiro MP", duration: 178, deletedAt: null, demoCover: 2 },
+      { id: "seed-4", title: "Evening Melody", artist: "Hiro MP", duration: 241, deletedAt: null, demoCover: 3 },
+      { id: "seed-5", title: "Cotton Candy Skies", artist: "Hiro MP", duration: 213, deletedAt: null, demoCover: 4 },
+      { id: "seed-trash", title: "Fading Echoes", artist: "Hiro MP", duration: 196, deletedAt: Date.now(), demoCover: 1 }
+    ];
+
+    const state = {
+      songs: loadSongs(),
+      currentId: null,
+      isPlaying: false,
+      repeat: true,
+      loop: false,
+      shuffle: false,
+      selectedAudioFile: null,
+      selectedCoverDataUrl: "",
+      objectUrls: new Map()
+    };
+
+    const audio = document.getElementById("audio");
+    const libraryBody = document.getElementById("libraryBody");
+    const trashList = document.getElementById("trashList");
+    const currentCover = document.getElementById("currentCover");
+    const currentTitle = document.getElementById("currentTitle");
+    const currentArtist = document.getElementById("currentArtist");
+    const currentYear = document.getElementById("currentYear");
+    const currentTime = document.getElementById("currentTime");
+    const durationTime = document.getElementById("durationTime");
+    const progressFill = document.getElementById("progressFill");
+    const progressThumb = document.getElementById("progressThumb");
+    const progressBar = document.getElementById("progressBar");
+    const playerShell = document.getElementById("playerShell");
+    const waveform = document.getElementById("waveform");
+    const playBtn = document.getElementById("playBtn");
+    const playIcon = document.getElementById("playIcon");
+    const searchInput = document.getElementById("searchInput");
+    const libraryStats = document.getElementById("libraryStats");
+    const audioInput = document.getElementById("audioInput");
+    const audioName = document.getElementById("audioName");
+    const coverInput = document.getElementById("coverInput");
+    const imagePreview = document.getElementById("imagePreview");
+    const addForm = document.getElementById("addForm");
+    const titleInput = document.getElementById("titleInput");
+    const artistInput = document.getElementById("artistInput");
+    const dropZone = document.getElementById("dropZone");
+    const toast = document.getElementById("toast");
+
+    function loadSongs() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(seedSongs));
+        return [...seedSongs];
+      }
+
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [...seedSongs];
+      } catch {
+        return [...seedSongs];
+      }
+    }
+
+    function saveSongs() {
+      const serializable = state.songs.map(({ runtimeFile, ...song }) => song);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+    }
+
+    function cleanExpiredTrash() {
+      const now = Date.now();
+      const nextSongs = state.songs.filter((song) => !song.deletedAt || now - song.deletedAt < TRASH_LIMIT);
+      if (nextSongs.length !== state.songs.length) {
+        state.songs = nextSongs;
+        saveSongs();
+      }
+    }
+
+    function visibleSongs() {
+      return state.songs.filter((song) => !song.deletedAt);
+    }
+
+    function deletedSongs() {
+      return state.songs.filter((song) => song.deletedAt);
+    }
+
+    function currentSong() {
+      return state.songs.find((song) => song.id === state.currentId) || visibleSongs()[0] || null;
+    }
+
+    function formatTime(value) {
+      if (!Number.isFinite(value) || value < 0) value = 0;
+      const minutes = Math.floor(value / 60);
+      const seconds = Math.floor(value % 60);
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function dotsIcon() {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>';
+    }
+
+    function coverMarkup(song, className = "thumb") {
+      const image = song.coverDataUrl ? `<img src="${song.coverDataUrl}" alt="">` : "";
+      const gradient = demoCovers[song.demoCover || 0] || demoCovers[0];
+      return `<span class="${className}" style="background:${gradient}">${image}</span>`;
+    }
+
+    function setCover(song) {
+      const image = song?.coverDataUrl ? `<img src="${song.coverDataUrl}" alt="">` : "";
+      const gradient = demoCovers[song?.demoCover || 0] || demoCovers[0];
+      currentCover.style.background = gradient;
+      currentCover.innerHTML = `${image}${image ? "" : '<span class="cover-art" aria-hidden="true"></span>'}`;
+    }
+
+    function renderWaveform() {
+      const bars = Array.from({ length: 84 }, (_, index) => {
+        const height = 8 + Math.abs(Math.sin(index * 1.7)) * 21 + (index % 9 === 0 ? 16 : 0);
+        return `<span class="bar" style="height:${height}px;--i:${index}"></span>`;
+      }).join("");
+      waveform.innerHTML = bars;
+    }
+
+    function renderLibrary() {
+      const query = searchInput.value.trim().toLowerCase();
+      const songs = visibleSongs();
+      const filtered = songs.filter((song) => {
+        return song.title.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query);
+      });
+
+      if (!filtered.length) {
+        libraryBody.innerHTML = '<tr><td colspan="5" class="empty-state">No songs found. Add a dreamy track from the panel.</td></tr>';
+      } else {
+        libraryBody.innerHTML = filtered.map((song, index) => `
+          <tr class="${song.id === state.currentId ? "active" : ""}" data-song-id="${song.id}">
+            <td class="col-num">${String(index + 1).padStart(2, "0")}</td>
+            <td class="col-title">
+              <button class="song-title-cell" type="button" data-action="select" data-id="${song.id}">
+                ${coverMarkup(song)}
+                <span>${escapeHtml(song.title)}</span>
+              </button>
+            </td>
+            <td class="col-artist">${escapeHtml(song.artist)}</td>
+            <td class="col-duration">${formatTime(song.duration)}</td>
+            <td class="col-menu">
+              <button class="ellipsis" type="button" data-action="trash" data-id="${song.id}" title="Move to trash">${dotsIcon()}</button>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      const total = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
+      libraryStats.textContent = `${songs.length} songs • ${formatTime(total)} total`;
+    }
+
+    function renderTrash() {
+      const items = deletedSongs();
+      if (!items.length) {
+        trashList.innerHTML = '<div class="empty-state">Trash is empty. Deleted songs will appear here.</div>';
+        return;
+      }
+
+      trashList.innerHTML = items.map((song) => `
+        <article class="trash-item" data-trash-id="${song.id}">
+          ${coverMarkup(song, "trash-thumb")}
+          <div>
+            <strong>${escapeHtml(song.title)}</strong>
+            <small>${escapeHtml(song.artist)}</small>
+          </div>
+          <button class="ellipsis" type="button" data-action="trash-menu" data-id="${song.id}" title="Trash actions">${dotsIcon()}</button>
+          <div class="trash-actions">
+            <button class="danger" type="button" data-action="delete-now" data-id="${song.id}">
+              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M9 7V5.5c0-.8.7-1.5 1.5-1.5h3c.8 0 1.5.7 1.5 1.5V7m-8 0 .8 13h8.4L17 7"/></svg>
+              Delete now
+            </button>
+            <button type="button" data-action="restore" data-id="${song.id}">
+              <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v6h6M5.3 17A8 8 0 1 0 5 8"/></svg>
+              Restore
+            </button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderPlayer() {
+      const song = currentSong();
+      if (!song) {
+        currentTitle.textContent = "No songs yet";
+        currentArtist.textContent = "Add your first track";
+        currentYear.textContent = new Date().getFullYear();
+        setCover({ demoCover: 0 });
+        updateProgress(0, 0);
+        return;
+      }
+
+      state.currentId = song.id;
+      currentTitle.textContent = song.title;
+      currentArtist.textContent = song.artist;
+      currentYear.textContent = new Date().getFullYear();
+      durationTime.textContent = formatTime(audio.duration || song.duration);
+      setCover(song);
+      playerShell.classList.toggle("is-playing", state.isPlaying);
+      playBtn.setAttribute("aria-label", state.isPlaying ? "Pause" : "Play");
+      playIcon.innerHTML = state.isPlaying
+        ? '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>'
+        : '<path d="M8 5v14l11-7z"/>';
+      document.getElementById("repeatBtn").classList.toggle("active", state.repeat);
+      document.getElementById("loopBtn").classList.toggle("active", state.loop);
+      document.getElementById("shuffleBtn").classList.toggle("active", state.shuffle);
+    }
+
+    function renderAll() {
+      cleanExpiredTrash();
+      if (!state.currentId && visibleSongs()[0]) {
+        state.currentId = visibleSongs()[0].id;
+      }
+      renderLibrary();
+      renderTrash();
+      renderPlayer();
+    }
+
+    function setAudioSource(song) {
+      if (!song) return false;
+      const hasRuntimeFile = Boolean(song.runtimeFile);
+      if (hasRuntimeFile) {
+        if (!state.objectUrls.has(song.id)) {
+          state.objectUrls.set(song.id, URL.createObjectURL(song.runtimeFile));
+        }
+        audio.src = state.objectUrls.get(song.id);
+        audio.loop = state.loop;
+        return true;
+      }
+
+      audio.removeAttribute("src");
+      audio.load();
+      return false;
+    }
+
+    function selectSong(id, shouldPlay = false) {
+      const song = state.songs.find((item) => item.id === id && !item.deletedAt);
+      if (!song) return;
+      state.currentId = song.id;
+      audio.currentTime = 0;
+      const playable = setAudioSource(song);
+      state.isPlaying = false;
+      if (shouldPlay) {
+        if (playable) {
+          playCurrent();
+        } else {
+          showToast("Demo songs are visual only. Import music to play audio.");
+        }
+      }
+      renderAll();
+    }
+
+    async function playCurrent() {
+      const song = currentSong();
+      if (!song) return;
+      const playable = audio.src || setAudioSource(song);
+      if (!playable) {
+        showToast("Import a music file first to play audio.");
+        return;
+      }
+
+      try {
+        await audio.play();
+        state.isPlaying = true;
+      } catch {
+        state.isPlaying = false;
+        showToast("Browser blocked playback. Try pressing play again.");
+      }
+      renderPlayer();
+    }
+
+    function pauseCurrent() {
+      audio.pause();
+      state.isPlaying = false;
+      renderPlayer();
+    }
+
+    function nextSong() {
+      const songs = visibleSongs();
+      if (!songs.length) return;
+      const currentIndex = songs.findIndex((song) => song.id === state.currentId);
+      let nextIndex = currentIndex + 1;
+      if (state.shuffle && songs.length > 1) {
+        do {
+          nextIndex = Math.floor(Math.random() * songs.length);
+        } while (nextIndex === currentIndex);
+      } else if (nextIndex >= songs.length) {
+        nextIndex = state.repeat ? 0 : currentIndex;
+      }
+      selectSong(songs[nextIndex]?.id, state.isPlaying);
+    }
+
+    function previousSong() {
+      const songs = visibleSongs();
+      if (!songs.length) return;
+      const currentIndex = songs.findIndex((song) => song.id === state.currentId);
+      const previousIndex = currentIndex <= 0 ? songs.length - 1 : currentIndex - 1;
+      selectSong(songs[previousIndex].id, state.isPlaying);
+    }
+
+    function restartSong() {
+      audio.currentTime = 0;
+      updateProgress(0, audio.duration || currentSong()?.duration || 0);
+    }
+
+    function updateProgress(current, duration) {
+      const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : currentSong()?.duration || 0;
+      const percent = safeDuration ? Math.min(100, Math.max(0, (current / safeDuration) * 100)) : 0;
+      progressFill.style.width = `${percent}%`;
+      progressThumb.style.left = `${percent}%`;
+      progressBar.setAttribute("aria-valuenow", String(Math.round(percent)));
+      currentTime.textContent = formatTime(current);
+      durationTime.textContent = formatTime(safeDuration);
+    }
+
+    function moveToTrash(id) {
+      const song = state.songs.find((item) => item.id === id);
+      if (!song) return;
+      song.deletedAt = Date.now();
+      if (state.currentId === id) {
+        pauseCurrent();
+        const next = visibleSongs()[0];
+        state.currentId = next?.id || null;
+        if (next) setAudioSource(next);
+      }
+      saveSongs();
+      renderAll();
+      showToast("Song moved to trash for 30 days.");
+    }
+
+    function deleteNow(id) {
+      const objectUrl = state.objectUrls.get(id);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      state.objectUrls.delete(id);
+      state.songs = state.songs.filter((song) => song.id !== id);
+      if (state.currentId === id) state.currentId = visibleSongs()[0]?.id || null;
+      saveSongs();
+      renderAll();
+      showToast("Song deleted permanently.");
+    }
+
+    function restoreSong(id) {
+      const song = state.songs.find((item) => item.id === id);
+      if (!song) return;
+      song.deletedAt = null;
+      saveSongs();
+      renderAll();
+      showToast("Song restored to library.");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 2400);
+    }
+
+    function resetForm() {
+      addForm.reset();
+      state.selectedAudioFile = null;
+      state.selectedCoverDataUrl = "";
+      audioName.textContent = "No music selected";
+      imagePreview.innerHTML = '<svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 18 9 12l4 5 2-3 5 4M7 8.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-3 12h16V3H4z"/></svg>';
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function getAudioDuration(file) {
+      return new Promise((resolve) => {
+        const temp = document.createElement("audio");
+        const url = URL.createObjectURL(file);
+        temp.preload = "metadata";
+        temp.onloadedmetadata = () => {
+          const duration = Number.isFinite(temp.duration) ? Math.round(temp.duration) : 0;
+          URL.revokeObjectURL(url);
+          resolve(duration);
+        };
+        temp.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        temp.src = url;
+      });
+    }
+
+    function handleAudioFile(file) {
+      if (!file || !file.type.startsWith("audio/")) {
+        showToast("Please choose a valid audio file.");
+        return;
+      }
+      state.selectedAudioFile = file;
+      audioName.textContent = file.name;
+      if (!titleInput.value.trim()) {
+        titleInput.value = file.name.replace(/\.[^/.]+$/, "").replaceAll("_", " ");
+      }
+    }
+
+    renderWaveform();
+    renderAll();
+
+    searchInput.addEventListener("input", renderLibrary);
+
+    libraryBody.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const { action, id } = button.dataset;
+      if (action === "select") selectSong(id, true);
+      if (action === "trash") moveToTrash(id);
+    });
+
+    trashList.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const { action, id } = button.dataset;
+      if (action === "trash-menu") {
+        const item = button.closest(".trash-item");
+        document.querySelectorAll(".trash-item.menu-open").forEach((openItem) => {
+          if (openItem !== item) openItem.classList.remove("menu-open");
+        });
+        item.classList.toggle("menu-open");
+      }
+      if (action === "delete-now") deleteNow(id);
+      if (action === "restore") restoreSong(id);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".trash-item")) {
+        document.querySelectorAll(".trash-item.menu-open").forEach((item) => item.classList.remove("menu-open"));
+      }
+    });
+
+    playBtn.addEventListener("click", () => {
+      if (state.isPlaying) pauseCurrent();
+      else playCurrent();
+    });
+
+    document.getElementById("nextBtn").addEventListener("click", nextSong);
+    document.getElementById("previousBtn").addEventListener("click", previousSong);
+    document.getElementById("restartBtn").addEventListener("click", restartSong);
+    document.getElementById("repeatBtn").addEventListener("click", () => {
+      state.repeat = !state.repeat;
+      renderPlayer();
+    });
+    document.getElementById("loopBtn").addEventListener("click", () => {
+      state.loop = !state.loop;
+      audio.loop = state.loop;
+      renderPlayer();
+    });
+    document.getElementById("shuffleBtn").addEventListener("click", () => {
+      state.shuffle = !state.shuffle;
+      renderPlayer();
+    });
+
+    progressBar.addEventListener("click", (event) => {
+      const duration = audio.duration || currentSong()?.duration || 0;
+      if (!duration) return;
+      const rect = progressBar.getBoundingClientRect();
+      const percent = (event.clientX - rect.left) / rect.width;
+      const target = Math.min(1, Math.max(0, percent)) * duration;
+      if (audio.src) audio.currentTime = target;
+      updateProgress(target, duration);
+    });
+
+    progressBar.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      const duration = audio.duration || currentSong()?.duration || 0;
+      if (!duration) return;
+      const direction = event.key === "ArrowRight" ? 5 : -5;
+      const target = Math.min(duration, Math.max(0, (audio.currentTime || 0) + direction));
+      if (audio.src) audio.currentTime = target;
+      updateProgress(target, duration);
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      updateProgress(audio.currentTime, audio.duration || currentSong()?.duration || 0);
+    });
+
+    audio.addEventListener("loadedmetadata", () => {
+      updateProgress(audio.currentTime, audio.duration);
+    });
+
+    audio.addEventListener("ended", () => {
+      if (state.loop) return;
+      if (state.repeat || state.shuffle) nextSong();
+      else {
+        state.isPlaying = false;
+        renderPlayer();
+      }
+    });
+
+    audioInput.addEventListener("change", (event) => handleAudioFile(event.target.files[0]));
+
+    ["dragenter", "dragover"].forEach((type) => {
+      dropZone.addEventListener(type, (event) => {
+        event.preventDefault();
+        dropZone.classList.add("dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((type) => {
+      dropZone.addEventListener(type, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("dragging");
+      });
+    });
+
+    dropZone.addEventListener("drop", (event) => {
+      const file = event.dataTransfer.files[0];
+      handleAudioFile(file);
+    });
+
+    coverInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        showToast("Please choose a valid image file.");
+        return;
+      }
+      state.selectedCoverDataUrl = await readFileAsDataUrl(file);
+      imagePreview.innerHTML = `<img src="${state.selectedCoverDataUrl}" alt="Selected cover preview">`;
+    });
+
+    addForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!state.selectedAudioFile) {
+        showToast("Choose a music file first.");
+        return;
+      }
+
+      const title = titleInput.value.trim();
+      if (!title) {
+        showToast("Add a title for your song.");
+        return;
+      }
+
+      const duration = await getAudioDuration(state.selectedAudioFile);
+      const song = {
+        id: `song-${Date.now()}`,
+        title,
+        artist: artistInput.value.trim() || "Unknown Artist",
+        coverDataUrl: state.selectedCoverDataUrl,
+        audioName: state.selectedAudioFile.name,
+        duration,
+        deletedAt: null,
+        runtimeFile: state.selectedAudioFile,
+        demoCover: Math.floor(Math.random() * demoCovers.length)
+      };
+
+      state.songs.unshift(song);
+      state.currentId = song.id;
+      saveSongs();
+      setAudioSource(song);
+      resetForm();
+      renderAll();
+      showToast("Song added to your library.");
+    });
+
+    document.getElementById("clearFormBtn").addEventListener("click", resetForm);
+
+    document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const target = document.getElementById(button.dataset.scrollTarget);
+        target?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      });
+    });
+  </script>
+</body>
+</html>
