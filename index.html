@@ -593,7 +593,7 @@
 
     .controls-row {
       display: grid;
-      grid-template-columns: minmax(220px, 1fr) minmax(178px, 0.78fr);
+      grid-template-columns: minmax(220px, 1fr) minmax(136px, 0.52fr);
       gap: 14px;
       align-items: center;
     }
@@ -1011,6 +1011,11 @@
       align-items: center;
     }
 
+    .image-picker > div:last-child {
+      display: grid;
+      justify-items: center;
+    }
+
     .image-preview {
       display: grid;
       place-items: center;
@@ -1032,6 +1037,7 @@
     .choose-image {
       display: inline-grid;
       place-items: center;
+      justify-self: center;
       width: 126px;
       height: 39px;
       border-radius: 9px;
@@ -1206,6 +1212,14 @@
       text-align: center;
     }
 
+    td.empty-state {
+      display: table-cell;
+      height: 70px;
+      min-height: 0;
+      text-align: center;
+      vertical-align: middle;
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -1274,7 +1288,7 @@
       }
 
       .controls-row {
-        grid-template-columns: minmax(300px, 1fr) minmax(220px, 0.75fr);
+        grid-template-columns: minmax(300px, 1fr) minmax(142px, 0.52fr);
       }
 
       .right-panel {
@@ -1404,10 +1418,6 @@
                 </button>
               </div>
               <div class="control-group">
-                <button class="control" type="button" id="repeatBtn" title="Repeat playlist">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M17 2.8 21 7l-4 4.2M3 11V9a2 2 0 0 1 2-2h16M7 21.2 3 17l4-4.2M21 13v2a2 2 0 0 1-2 2H3"/></svg>
-                  <span>Repeat</span>
-                </button>
                 <button class="control" type="button" id="loopBtn" title="Loop current song">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" d="M17 2.8 21 7l-4 4.2M3 11V9a2 2 0 0 1 2-2h16M7 21.2 3 17l4-4.2M21 13v2a2 2 0 0 1-2 2H3"/></svg>
                   <span>Loop</span>
@@ -1550,6 +1560,9 @@
 
   <script>
     const STORAGE_KEY = "hiroMPLayerSongs";
+    const DB_NAME = "hiroMPLayerStorage";
+    const DB_VERSION = 1;
+    const AUDIO_STORE = "audioFiles";
     const TRASH_LIMIT = 30 * 24 * 60 * 60 * 1000;
 
     const demoCovers = [
@@ -1560,26 +1573,18 @@
       "linear-gradient(145deg, #c4a5ff 0%, #f5c3ff 48%, #9ed3ff 100%)"
     ];
 
-    const seedSongs = [
-      { id: "seed-1", title: "Daydream Parade", artist: "Hiro MP", duration: 225, deletedAt: null, demoCover: 0 },
-      { id: "seed-2", title: "Starlight Whisper", artist: "Hiro MP", duration: 252, deletedAt: null, demoCover: 1 },
-      { id: "seed-3", title: "Minty Memories", artist: "Hiro MP", duration: 178, deletedAt: null, demoCover: 2 },
-      { id: "seed-4", title: "Evening Melody", artist: "Hiro MP", duration: 241, deletedAt: null, demoCover: 3 },
-      { id: "seed-5", title: "Cotton Candy Skies", artist: "Hiro MP", duration: 213, deletedAt: null, demoCover: 4 },
-      { id: "seed-trash", title: "Fading Echoes", artist: "Hiro MP", duration: 196, deletedAt: Date.now(), demoCover: 1 }
-    ];
-
     const state = {
       songs: loadSongs(),
       currentId: null,
       isPlaying: false,
-      repeat: true,
       loop: false,
       shuffle: false,
       selectedAudioFile: null,
       selectedCoverDataUrl: "",
       objectUrls: new Map()
     };
+
+    let audioDbPromise = null;
 
     const audio = document.getElementById("audio");
     const libraryBody = document.getElementById("libraryBody");
@@ -1612,21 +1617,67 @@
     function loadSongs() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seedSongs));
-        return [...seedSongs];
+        return [];
       }
 
       try {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [...seedSongs];
+        return Array.isArray(parsed) ? parsed.filter((song) => !String(song.id || "").startsWith("seed-")) : [];
       } catch {
-        return [...seedSongs];
+        return [];
       }
     }
 
     function saveSongs() {
       const serializable = state.songs.map(({ runtimeFile, ...song }) => song);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+    }
+
+    function openAudioDb() {
+      if (audioDbPromise) return audioDbPromise;
+
+      audioDbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(AUDIO_STORE)) {
+            db.createObjectStore(AUDIO_STORE);
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+
+      return audioDbPromise;
+    }
+
+    async function saveAudioBlob(id, file) {
+      const db = await openAudioDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(AUDIO_STORE, "readwrite");
+        transaction.objectStore(AUDIO_STORE).put(file, id);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+      });
+    }
+
+    async function getAudioBlob(id) {
+      const db = await openAudioDb();
+      return new Promise((resolve, reject) => {
+        const request = db.transaction(AUDIO_STORE, "readonly").objectStore(AUDIO_STORE).get(id);
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function deleteAudioBlob(id) {
+      const db = await openAudioDb();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(AUDIO_STORE, "readwrite");
+        transaction.objectStore(AUDIO_STORE).delete(id);
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+      });
     }
 
     function cleanExpiredTrash() {
@@ -1699,7 +1750,8 @@
       });
 
       if (!filtered.length) {
-        libraryBody.innerHTML = '<tr><td colspan="5" class="empty-state">No songs found. Add a dreamy track from the panel.</td></tr>';
+        const message = songs.length ? "No songs found. Try another keyword." : "U dont have anything, add moreee";
+        libraryBody.innerHTML = `<tr><td colspan="5" class="empty-state">${message}</td></tr>`;
       } else {
         libraryBody.innerHTML = filtered.map((song, index) => `
           <tr class="${song.id === state.currentId ? "active" : ""}" data-song-id="${song.id}">
@@ -1720,7 +1772,7 @@
       }
 
       const total = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
-      libraryStats.textContent = `${songs.length} songs • ${formatTime(total)} total`;
+      libraryStats.textContent = `${songs.length} songs - ${formatTime(total)} total`;
     }
 
     function renderTrash() {
@@ -1774,7 +1826,6 @@
       playIcon.innerHTML = state.isPlaying
         ? '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>'
         : '<path d="M8 5v14l11-7z"/>';
-      document.getElementById("repeatBtn").classList.toggle("active", state.repeat);
       document.getElementById("loopBtn").classList.toggle("active", state.loop);
       document.getElementById("shuffleBtn").classList.toggle("active", state.shuffle);
     }
@@ -1789,14 +1840,20 @@
       renderPlayer();
     }
 
-    function setAudioSource(song) {
+    async function setAudioSource(song) {
       if (!song) return false;
-      const hasRuntimeFile = Boolean(song.runtimeFile);
-      if (hasRuntimeFile) {
-        if (!state.objectUrls.has(song.id)) {
-          state.objectUrls.set(song.id, URL.createObjectURL(song.runtimeFile));
-        }
+
+      if (state.objectUrls.has(song.id)) {
         audio.src = state.objectUrls.get(song.id);
+        audio.loop = state.loop;
+        return true;
+      }
+
+      const audioBlob = song.runtimeFile || (song.hasAudio ? await getAudioBlob(song.id) : null);
+      if (audioBlob) {
+        const objectUrl = URL.createObjectURL(audioBlob);
+        state.objectUrls.set(song.id, objectUrl);
+        audio.src = objectUrl;
         audio.loop = state.loop;
         return true;
       }
@@ -1806,18 +1863,18 @@
       return false;
     }
 
-    function selectSong(id, shouldPlay = false) {
+    async function selectSong(id, shouldPlay = false) {
       const song = state.songs.find((item) => item.id === id && !item.deletedAt);
       if (!song) return;
       state.currentId = song.id;
       audio.currentTime = 0;
-      const playable = setAudioSource(song);
+      const playable = await setAudioSource(song);
       state.isPlaying = false;
       if (shouldPlay) {
         if (playable) {
           playCurrent();
         } else {
-          showToast("Demo songs are visual only. Import music to play audio.");
+          showToast("Audio file is missing. Please import it again.");
         }
       }
       renderAll();
@@ -1826,7 +1883,7 @@
     async function playCurrent() {
       const song = currentSong();
       if (!song) return;
-      const playable = audio.src || setAudioSource(song);
+      const playable = audio.src || await setAudioSource(song);
       if (!playable) {
         showToast("Import a music file first to play audio.");
         return;
@@ -1848,7 +1905,7 @@
       renderPlayer();
     }
 
-    function nextSong() {
+    function nextSong(stopAtEnd = false) {
       const songs = visibleSongs();
       if (!songs.length) return;
       const currentIndex = songs.findIndex((song) => song.id === state.currentId);
@@ -1858,7 +1915,12 @@
           nextIndex = Math.floor(Math.random() * songs.length);
         } while (nextIndex === currentIndex);
       } else if (nextIndex >= songs.length) {
-        nextIndex = state.repeat ? 0 : currentIndex;
+        if (stopAtEnd) {
+          state.isPlaying = false;
+          renderPlayer();
+          return;
+        }
+        nextIndex = 0;
       }
       selectSong(songs[nextIndex]?.id, state.isPlaying);
     }
@@ -1886,7 +1948,7 @@
       durationTime.textContent = formatTime(safeDuration);
     }
 
-    function moveToTrash(id) {
+    async function moveToTrash(id) {
       const song = state.songs.find((item) => item.id === id);
       if (!song) return;
       song.deletedAt = Date.now();
@@ -1894,17 +1956,18 @@
         pauseCurrent();
         const next = visibleSongs()[0];
         state.currentId = next?.id || null;
-        if (next) setAudioSource(next);
+        if (next) await setAudioSource(next);
       }
       saveSongs();
       renderAll();
       showToast("Song moved to trash for 30 days.");
     }
 
-    function deleteNow(id) {
+    async function deleteNow(id) {
       const objectUrl = state.objectUrls.get(id);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       state.objectUrls.delete(id);
+      await deleteAudioBlob(id);
       state.songs = state.songs.filter((song) => song.id !== id);
       if (state.currentId === id) state.currentId = visibleSongs()[0]?.id || null;
       saveSongs();
@@ -2017,10 +2080,6 @@
     document.getElementById("nextBtn").addEventListener("click", nextSong);
     document.getElementById("previousBtn").addEventListener("click", previousSong);
     document.getElementById("restartBtn").addEventListener("click", restartSong);
-    document.getElementById("repeatBtn").addEventListener("click", () => {
-      state.repeat = !state.repeat;
-      renderPlayer();
-    });
     document.getElementById("loopBtn").addEventListener("click", () => {
       state.loop = !state.loop;
       audio.loop = state.loop;
@@ -2062,11 +2121,8 @@
 
     audio.addEventListener("ended", () => {
       if (state.loop) return;
-      if (state.repeat || state.shuffle) nextSong();
-      else {
-        state.isPlaying = false;
-        renderPlayer();
-      }
+      if (state.shuffle) nextSong();
+      else nextSong(true);
     });
 
     audioInput.addEventListener("change", (event) => handleAudioFile(event.target.files[0]));
@@ -2121,16 +2177,25 @@
         artist: artistInput.value.trim() || "Unknown Artist",
         coverDataUrl: state.selectedCoverDataUrl,
         audioName: state.selectedAudioFile.name,
+        audioType: state.selectedAudioFile.type,
+        hasAudio: true,
         duration,
         deletedAt: null,
         runtimeFile: state.selectedAudioFile,
         demoCover: Math.floor(Math.random() * demoCovers.length)
       };
 
+      try {
+        await saveAudioBlob(song.id, state.selectedAudioFile);
+      } catch {
+        showToast("Could not save this audio locally. Try a smaller file.");
+        return;
+      }
+
       state.songs.unshift(song);
       state.currentId = song.id;
       saveSongs();
-      setAudioSource(song);
+      await setAudioSource(song);
       resetForm();
       renderAll();
       showToast("Song added to your library.");
