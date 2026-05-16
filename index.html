@@ -1746,8 +1746,10 @@
         `).join("");
       }
 
-      const total = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
-      libraryStats.textContent = `${songs.length} songs - ${formatTime(total)} total`;
+      if (libraryStats) {
+        const total = songs.reduce((sum, song) => sum + (song.duration || 0), 0);
+        libraryStats.textContent = `${songs.length} songs - ${formatTime(total)} total`;
+      }
     }
 
     function renderTrash() {
